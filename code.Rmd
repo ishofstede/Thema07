@@ -1,0 +1,147 @@
+---
+title: "aryl_hydrocarbon"
+author: "Isabella Hofstede"
+date: "2/10/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+##loading data 
+```{r}
+my_data <- read.table('./data/GSE47944_ps_tt_gel_raw.txt', header = TRUE)
+my_data
+```
+
+##summary
+```{r}
+summary(my_data)
+#de data sample naamgeving is opgebouwd uit samplenaam_patientnummer. Dus het getal op het eind geeft aan bij welke patient het sample hoort
+```
+
+
+##Data preperation
+```{r}
+#volledige dataset met alle sample punten
+full_data <- my_data[2:85]
+# 64 sick samples
+sick_data <- my_data[2:65]
+#20 healthy samples
+healthy_data <- my_data[66: 85]
+```
+
+##Boxplot Analyses
+```{r}
+boxplot(log2(full_data + 1), data=my_data, xlab="samples", ylab="log2(counts)", 
+    main="Gene counts of healthy and sick patients", las=2, par(cex.axis=0.45))
+boxplot(log2(sick_data + 1), data=my_data, xlab="samples", ylab="log2(counts)", 
+    main="gene counts of sick patients", col="red", las=2)
+boxplot(log2(healthy_data + 1), data=my_data, xlab="samples", ylab="log2(counts)", 
+    main="gene counts of healthy patients", col="blue", las=2)
+```
+##density plot analysis 
+```{r}
+## The affy library has a density plotting function
+library(affy)
+
+## Create a list of 4 colors to use which are the same used throughout this chapter 
+library(scales)
+myColors <- hue_pal()(4)
+```
+
+##density plot of all sick patients
+```{r}
+## Plot the log2-transformed data with a 0.1 pseudocount of the whole dataset
+plotDensity(log2(full_data + 0.1), col=rep(myColors, each=3),
+            lty=c(1:ncol(full_data)), xlab='Log2(count)',
+            main='Expression Distribution of all patients')
+
+## Add a legend and vertical line
+legend('topright', names(full_data), lty=c(1:ncol(full_data)),
+       col=rep(myColors, each=3))
+abline(v=-1.5, lwd=1, col='red', lty=2)
+
+## Plot the log2-transformed data with a 0.1 pseudocount of the sick patients
+plotDensity(log2(sick_data + 0.1), col=rep(myColors, each=3),
+            lty=c(1:ncol(sick_data)), xlab='Log2(count)',
+            main='Expression Distribution of sick patients')
+
+## Add a legend and vertical line
+legend('topright', names(sick_data), lty=c(1:ncol(full_data)),
+       col=rep(myColors, each=3))
+abline(v=-1.5, lwd=1, col='red', lty=2)
+
+## Plot the log2-transformed data with a 0.1 pseudocount of healthy patients
+plotDensity(log2(healthy_data + 0.1), col=rep(myColors, each=3),
+            lty=c(1:ncol(healthy_data)), xlab='Log2(count)',
+            main='Expression Distribution of healthy patients')
+
+## Add a legend and vertical line
+legend('topright', names(healthy_data), lty=c(1:ncol(full_data)),
+       col=rep(myColors, each=3))
+abline(v=-1.5, lwd=1, col='red', lty=2)
+```
+##Barplot analysis 
+```{r}
+barplot(colSums(full_data) / 1e6, xlab="samples", ylab="log2(counts)", 
+    main="gene counts of all patients", las=2, cex.names= 0.45)
+barplot(colSums(sick_data) / 1e6, xlab="samples", ylab="log2(counts)", 
+    main="gene counts of sick patients", col="red", las=2, cex.names= 0.45)
+barplot(colSums(healthy_data) / 1e6, xlab="samples", ylab="log2(counts)", 
+    main="gene counts of healthy patients", col="blue", las=2, cex.names= 0.45)
+```
+##normalisation 
+```{r}
+# Load the library
+library('DESeq2')
+
+# DESeq2 will construct a SummarizedExperiment object and combine this 
+# into a 'DESeqDataSet' object. The 'design' argument usually indicates the 
+# experimental design using the condition(s) names as a 'factor', for now we use just '~ 1'
+(ddsMat <- DESeqDataSetFromMatrix(countData = full_data,
+                                  colData = data.frame(samples = names(full_data)),
+                                  design = ~ 1))
+```
+
+##Normalization
+```{r}
+# Perform normalization
+rld.dds <- vst(ddsMat)
+# 'Extract' normalized values
+rld <- assay(rld.dds)
+```
+
+##distance calculation
+```{r}
+# Calculate basic distance metric (using euclidean distance, see '?dist')
+sampledists <- dist( t( rld ))
+```
+
+##heatmap
+```{r}
+# We use the 'pheatmap' library (install with install.packages('pheatmap'))
+library(pheatmap)
+
+# Convert the 'dist' object into a matrix for creating a heatmap
+sampleDistMatrix <- as.matrix(sampledists)
+sampleDistMatrix
+#The annotation is an extra layer that will be plotted above the heatmap columns
+# indicating the cell type
+annotation <- data.frame(Cell = factor(rep(1:2, each = 66), 
+                                          labels = c("Sick", "Healthy")))
+                         
+#Set the rownames of the annotation dataframe to the sample names (required)
+rownames(annotation) <- names(full_data)
+
+pheatmap(sampleDistMatrix, show_colnames = FALSE,
+         annotation_col = annotation,
+         clustering_distance_rows = sampledists,
+         clustering_distance_cols = sampledists,
+         main = "Euclidean Sample Distances")
+```
+
+## Links
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47944
