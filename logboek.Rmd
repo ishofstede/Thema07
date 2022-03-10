@@ -10,6 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## week 1
- 
+Found a dataset relating to skin deceases affected bt enviornmental factors which uses to gene count analysis. Source: NCBI dataset https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47944
 
 

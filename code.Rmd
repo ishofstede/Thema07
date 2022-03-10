@@ -28,6 +28,10 @@ summary(my_data)
 sick_data <- my_data[1:64]
 #20 healthy samples
 healthy_data <- my_data[65: 84]
+
+library(GEOquery)
+classification <- getGEO(filename="GSE47944_series_matrix.txt")
+phenodata <- classification@phenoData@data
 ```
 
 ##Boxplot Analyses
@@ -128,7 +132,8 @@ sampleDistMatrix <- as.matrix(sampledists)
 # indicating the cell type
 annotation <- data.frame(Cell = factor(c(rep(1, 64), rep(2, 20)),
                                           labels = c("Sick", "Healthy")))
-                         
+
+annotation$gender <- phenodata$characteristics_ch1.2
 #Set the rownames of the annotation dataframe to the sample names (required)
 rownames(annotation) <- names(my_data)
 
@@ -160,9 +165,11 @@ names(mdsPoisData) <- c('x_coord', 'y_coord')
 library(ggplot2)
 # Separate the annotation factor (as the variable name is used as label)
 groups <- factor(c(rep(1, 64), rep(2, 20)),
-                                      labels = c("Sick", "Healthy"))
-coldata <- names(my_data) 
+                                    labels = c("Sick", "Healthy"))
+groups <- as.factor(paste(annotation$Cell, phenodata$characteristics_ch1.5, phenodata$characteristics_ch1.6, sep= "_"))
+coldata <- names(my_data)
 
+levels(groups)
 # Create the plot using ggplot
 ggplot(mdsPoisData, aes(x_coord, y_coord, color = groups, label = coldata)) + 
   geom_text(size = 4) +
@@ -170,6 +177,7 @@ ggplot(mdsPoisData, aes(x_coord, y_coord, color = groups, label = coldata)) +
   labs(x = "Poisson Distance", y = "Poisson Distance") +
   theme_bw()
 ```
+There is a clear clustering of multiple samples.
 
 ## Links
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47944
