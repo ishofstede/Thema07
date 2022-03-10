@@ -24,8 +24,6 @@ summary(my_data)
 
 ##Data preperation
 ```{r}
-#volledige dataset met alle sample punten
-full_data <- my_data[1:84]
 # 64 sick samples
 sick_data <- my_data[1:64]
 #20 healthy samples
@@ -34,7 +32,7 @@ healthy_data <- my_data[65: 84]
 
 ##Boxplot Analyses
 ```{r}
-boxplot(log2(full_data + 1), data=my_data, xlab="samples", ylab="log2(counts)", 
+boxplot(log2(my_data + 1), data=my_data, xlab="samples", ylab="log2(counts)", 
     main="Gene counts of healthy and sick patients", las=2, par(cex.axis=0.45))
 boxplot(log2(sick_data + 1), data=my_data, xlab="samples", ylab="log2(counts)", 
     main="gene counts of sick patients", col="red", las=2)
@@ -54,12 +52,12 @@ myColors <- hue_pal()(4)
 ##density plot of all sick patients
 ```{r}
 ## Plot the log2-transformed data with a 0.1 pseudocount of the whole dataset
-plotDensity(log2(full_data + 0.1), col=rep(myColors, each=3),
-            lty=c(1:ncol(full_data)), xlab='Log2(count)',
+plotDensity(log2(my_data + 0.1), col=rep(myColors, each=3),
+            lty=c(1:ncol(my_data)), xlab='Log2(count)',
             main='Expression Distribution of all patients')
 
 ## Add a legend and vertical line
-legend('topright', names(full_data), lty=c(1:ncol(full_data)),
+legend('topright', names(my_data), lty=c(1:ncol(my_data)),
        col=rep(myColors, each=3))
 abline(v=-1.5, lwd=1, col='red', lty=2)
 
@@ -69,7 +67,7 @@ plotDensity(log2(sick_data + 0.1), col=rep(myColors, each=3),
             main='Expression Distribution of sick patients')
 
 ## Add a legend and vertical line
-legend('topright', names(sick_data), lty=c(1:ncol(full_data)),
+legend('topright', names(sick_data), lty=c(1:ncol(my_data)),
        col=rep(myColors, each=3))
 abline(v=-1.5, lwd=1, col='red', lty=2)
 
@@ -79,13 +77,13 @@ plotDensity(log2(healthy_data + 0.1), col=rep(myColors, each=3),
             main='Expression Distribution of healthy patients')
 
 ## Add a legend and vertical line
-legend('topright', names(healthy_data), lty=c(1:ncol(full_data)),
+legend('topright', names(healthy_data), lty=c(1:ncol(my_data)),
        col=rep(myColors, each=3))
 abline(v=-1.5, lwd=1, col='red', lty=2)
 ```
 ##Barplot analysis 
 ```{r}
-barplot(colSums(full_data) / 1e6, xlab="samples", ylab="log2(counts)", 
+barplot(colSums(my_data) / 1e6, xlab="samples", ylab="log2(counts)", 
     main="gene counts of all patients", las=2, cex.names= 0.45)
 barplot(colSums(sick_data) / 1e6, xlab="samples", ylab="log2(counts)", 
     main="gene counts of sick patients", col="red", las=2, cex.names= 0.45)
@@ -100,8 +98,8 @@ library('DESeq2')
 # DESeq2 will construct a SummarizedExperiment object and combine this 
 # into a 'DESeqDataSet' object. The 'design' argument usually indicates the 
 # experimental design using the condition(s) names as a 'factor', for now we use just '~ 1'
-(ddsMat <- DESeqDataSetFromMatrix(countData = full_data,
-                                  colData = data.frame(samples = names(full_data)),
+(ddsMat <- DESeqDataSetFromMatrix(countData = my_data,
+                                  colData = data.frame(samples = names(my_data)),
                                   design = ~ 1))
 ```
 
@@ -142,7 +140,36 @@ pheatmap(sampleDistMatrix, show_colnames = FALSE,
          main = "Euclidean Sample Distances")
 ```
 ##multi-dimentional scaling 
+```{r}
+library('PoiClaClu')
+# Use the raw (not r-log transformed!) counts
+dds <- assay(ddsMat)
+poisd <- PoissonDistance( t(dds) )
+# Extract the matrix with distances
+samplePoisDistMatrix <- as.matrix(poisd$dd)
+# Calculate the MDS and get the X- and Y-coordinates
+mdsPoisData <- data.frame( cmdscale(samplePoisDistMatrix) )
 
+# And set some better readable names for the columns
+names(mdsPoisData) <- c('x_coord', 'y_coord')
+```
+
+
+
+```{r}
+library(ggplot2)
+# Separate the annotation factor (as the variable name is used as label)
+groups <- factor(c(rep(1, 64), rep(2, 20)),
+                                      labels = c("Sick", "Healthy"))
+coldata <- names(my_data) 
+
+# Create the plot using ggplot
+ggplot(mdsPoisData, aes(x_coord, y_coord, color = groups, label = coldata)) + 
+  geom_text(size = 4) +
+  ggtitle('Multi Dimensional Scaling') +
+  labs(x = "Poisson Distance", y = "Poisson Distance") +
+  theme_bw()
+```
 
 ## Links
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47944
