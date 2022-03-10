@@ -9,12 +9,10 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-test
 
 ##loading data 
 ```{r}
-my_data <- read.table('./data/GSE47944_ps_tt_gel_raw.txt', header = TRUE)
-my_data
+my_data <- read.table('./GSE47944_ps_tt_gel_raw.txt', header = TRUE, row.names = 1)
 ```
 
 ##summary
@@ -27,11 +25,11 @@ summary(my_data)
 ##Data preperation
 ```{r}
 #volledige dataset met alle sample punten
-full_data <- my_data[2:85]
+full_data <- my_data[1:84]
 # 64 sick samples
-sick_data <- my_data[2:65]
+sick_data <- my_data[1:64]
 #20 healthy samples
-healthy_data <- my_data[66: 85]
+healthy_data <- my_data[65: 84]
 ```
 
 ##Boxplot Analyses
@@ -128,21 +126,23 @@ library(pheatmap)
 
 # Convert the 'dist' object into a matrix for creating a heatmap
 sampleDistMatrix <- as.matrix(sampledists)
-sampleDistMatrix
 #The annotation is an extra layer that will be plotted above the heatmap columns
 # indicating the cell type
-annotation <- data.frame(Cell = factor(rep(1:2, each = 66), 
+annotation <- data.frame(Cell = factor(c(rep(1, 64), rep(2, 20)),
                                           labels = c("Sick", "Healthy")))
                          
 #Set the rownames of the annotation dataframe to the sample names (required)
-rownames(annotation) <- names(full_data)
+rownames(annotation) <- names(my_data)
 
 pheatmap(sampleDistMatrix, show_colnames = FALSE,
          annotation_col = annotation,
          clustering_distance_rows = sampledists,
          clustering_distance_cols = sampledists,
+         show_rownames = F,
          main = "Euclidean Sample Distances")
 ```
+##multi-dimentional scaling 
+
 
 ## Links
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47944
