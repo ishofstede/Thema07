@@ -10,6 +10,32 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## week 1
-Found a dataset relating to skin deceases affected bt enviornmental factors which uses to gene count analysis. Source: NCBI dataset https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47944
+Found a dataset relating to skin deceases affected by enviornmental factors 
+which uses to gene count analysis. 
+Source: NCBI dataset https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47944
+
+## week 2
+Finished the project proposal. 
+
+## week 3
+Performed exploratory data analysis on the raw dataset. Because the dataset is 
+rather large (37166 observations of 84 variables) it has been split into the 
+healthy and sick patients. Boxplot analysis show that there's multiples 
+outliers in both the healthy and sick group. Further analysis, especially in 
+the heat map proved there is some clustering happening if separated by gender. 
+Further analysis is needed. 
+
+## week 4
+After analyzing the phenodata the dataset appears to have more variables than 
+just "sick" and "healthy" patients with variation in gender. The variables 
+that seem to have affect on the gene counts are: tissue (lesion, non-lesion); 
+treatment (untreated, Culture/DMSO, agonist, antagonist) 
+and age (ranges from 30 to 63 in sick patients but with exact age given. However 
+for healthy patients only a range of 30 to 74 is given with a mean of 51).
+
+After performing multi-dimentional scaling there are still seemingly four 
+separate groups appearing. 
+
+## week 5
 
 
