@@ -57,3 +57,5 @@ Disease Relevance Condition:
 Differential expression in untreated L vs NL < 0.05
 Result: 41 genes
 
+## week 6
+The data has been pre-processed. The mean expression and the fold change has been calculated. The thresholds 

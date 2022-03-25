@@ -7,32 +7,60 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cashe = TRUE)
 ```
 
+## Loading packages
+The following packages are being loaded. 
+```{r, echo=FALSE}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
 
-##loading data 
+BiocManager::install("edgeR")
+```
+
+# Installing libraries 
+The following libraries have been installed.
+```{r, echo=FALSE}
+library(GEOquery)
+## The affy library has a density plotting function
+library(affy)
+## Create a list of 4 colors to use which are the same used throughout 
+#this chapter 
+library(scales)
+# Load the library
+library('DESeq2')
+# We use the 'pheatmap' library (install with install.packages('pheatmap'))
+library(pheatmap)
+# multidimentional scaling 
+library('PoiClaClu')
+#ggplot
+library(ggplot2)
+#edgeR
+library(edgeR)
+```
+
+## loading data 
+The data frame is build up from sample number and read counts. Each sample has 
+different values attached in the phenotype data frame. The ones that will be
+looked at during this experiment are lesional (L) versus non lesional (NL) 
+psoriasis skin.
 ```{r}
-my_data <- read.table('./GSE47944_ps_tt_gel_raw.txt', header = TRUE, row.names = 1)
+my_data <- read.table('./GSE47944_ps_tt_gel_raw.txt', header = TRUE, 
+                      row.names = 1)
+classification <- getGEO(filename="GSE47944_series_matrix.txt")
+phenodata <- classification@phenoData@data
 ```
 
-##summary
-```{r}
-summary(my_data)
-# de data sample naamgeving is opgebouwd uit samplenaam_patientnummer. 
-# Dus het getal op het eind geeft aan bij welke patient het sample hoort
-```
-
-
-##Data preperation
+## Data preperation
 ```{r}
 # 64 sick samples
 sick_data <- my_data[1:64]
 #20 healthy samples
 healthy_data <- my_data[65: 84]
-
-library(GEOquery)
-classification <- getGEO(filename="GSE47944_series_matrix.txt")
-phenodata <- classification@phenoData@data
+lesonal_data <- phenodata$characteristics_ch1.5
+#nonlesonal_data <-
+merge(my_data, annotaion, by.x = "row.names", by.y = "column.names")
 ```
 
 ##Boxplot Analyses
@@ -44,20 +72,12 @@ boxplot(log2(sick_data + 1), data=my_data, xlab="samples", ylab="log2(counts)",
 boxplot(log2(healthy_data + 1), data=my_data, xlab="samples", ylab="log2(counts)", 
     main="gene counts of healthy patients", col="blue", las=2)
 ```
-##density plot analysis 
-```{r}
-## The affy library has a density plotting function
-library(affy)
 
-## Create a list of 4 colors to use which are the same used throughout 
-#this chapter 
-library(scales)
-myColors <- hue_pal()(4)
-```
 
 ##density plot of all sick patients
 ```{r}
 ## Plot the log2-transformed data with a 0.1 pseudocount of the whole dataset
+myColors <- hue_pal()(4)
 plotDensity(log2(my_data + 0.1), col=rep(myColors, each=3),
             lty=c(1:ncol(my_data)), xlab='Log2(count)',
             main='Expression Distribution of all patients')
@@ -87,6 +107,7 @@ legend('topright', names(healthy_data), lty=c(1:ncol(my_data)),
        col=rep(myColors, each=3))
 abline(v=-1.5, lwd=1, col='red', lty=2)
 ```
+
 ##Barplot analysis 
 ```{r}
 barplot(colSums(my_data) / 1e6, xlab="samples", ylab="log2(counts)", 
@@ -96,11 +117,9 @@ barplot(colSums(sick_data) / 1e6, xlab="samples", ylab="log2(counts)",
 barplot(colSums(healthy_data) / 1e6, xlab="samples", ylab="log2(counts)", 
     main="gene counts of healthy patients", col="blue", las=2, cex.names= 0.45)
 ```
+
 ##normalisation 
 ```{r}
-# Load the library
-library('DESeq2')
-
 # DESeq2 will construct a SummarizedExperiment object and combine this 
 # into a 'DESeqDataSet' object. The 'design' argument usually indicates the 
 # experimental design using the condition(s) names as a 'factor', for now 
@@ -118,17 +137,10 @@ rld.dds <- vst(ddsMat)
 rld <- assay(rld.dds)
 ```
 
-##distance calculation
-```{r}
-# Calculate basic distance metric (using euclidean distance, see '?dist')
-sampledists <- dist( t( rld ))
-```
-
 ##heatmap
 ```{r, echo=TRUE, message=FALSE, warning=FALSE}
-# We use the 'pheatmap' library (install with install.packages('pheatmap'))
-library(pheatmap)
-
+# Calculate basic distance metric (using euclidean distance, see '?dist')
+sampledists <- dist( t( rld ))
 # Convert the 'dist' object into a matrix for creating a heatmap
 sampleDistMatrix <- as.matrix(sampledists)
 #The annotation is an extra layer that will be plotted above the heatmap columns
@@ -150,7 +162,6 @@ pheatmap(sampleDistMatrix, show_colnames = FALSE,
 ```
 ##multi-dimentional scaling 
 ```{r}
-library('PoiClaClu')
 # Use the raw (not r-log transformed!) counts
 dds <- assay(ddsMat)
 poisd <- PoissonDistance( t(dds) )
@@ -166,7 +177,6 @@ names(mdsPoisData) <- c('x_coord', 'y_coord')
 
 
 ```{r}
-library(ggplot2)
 # Separate the annotation factor (as the variable name is used as label)
 groups <- factor(c(rep(1, 64), rep(2, 20)),
                                     labels = c("Sick", "Healthy"))
@@ -189,12 +199,29 @@ There is a clear clustering of multiple samples.For further analysis the groups 
 # Note: log transformation includes a pseudocount of 1
 my_data.fpm <- log2( (my_data/ (colSums(my_data) / 1e6)) + 1 )
 
+# Removing the low counts
+# Which values in my_data_fpm are greater than 0.5?
+keep <- apply(my_data.fpm, 1, function(row) all(row >2))
 
+# subset the rows of countdata to keep the more highly expressed genes
+counts_keep <- my_data.fpm[keep,] 
 
-```
-## The fold change value 
-```{r}
+#the total number of counts 
+dim(my_data.fpm)
 
+# the amount of counts to keep
+dim(counts_keep)
+
+# seperate into healthy averages and sick averages
+counts_keep$avg_h <- rowMeans(counts_keep[1:64])
+counts_keep$avg_s <- rowMeans(counts_keep[65: 84])
+
+# generate FC values into the cleaned dataset
+counts_keep$FC_val <- counts_keep$avg_h - counts_keep$avg_s
+
+# make a histogram
+hist(as.matrix(counts_keep$FC_val), breaks=100, main="log2 fold change values over genes", xlab = "log2-FC", ylab="genes")
+abline(v = c(1, -1), col="red")
 ```
 
 ## Links
