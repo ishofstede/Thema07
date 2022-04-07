@@ -250,7 +250,7 @@ head(res)
 
 #plotcounts
 par(mfrow=c(2,3))
-plotCounts(dds, gene="ENSG00000237223|SULT1C2P1", intgroup = "healthy")
+plotCounts(dds, gene="ENSG00000237223|SULT1C2P1", intgroup = "tissue")
 
 ```
 
